@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>North American Hyrax Zoo Map 🦫</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        
+        h1 {
+            color: #fff;
+            font-size: 1.8em;
+            font-weight: 300;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 0.95em;
+            font-weight: 300;
+        }
+        
+        .subtitle span {
+            color: #ffd700;
+            font-weight: 500;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 180px);
+        }
+        
+        #map {
+            flex: 1;
+            height: 100%;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #16213e;
+            overflow-y: auto;
+            border-left: 1px solid #333;
+        }
+        
+        .sidebar-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 0.85em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 400;
+        }
+        
+        .filter-controls {
+            padding: 15px 20px;
+            background: #1a1a2e;
+            border-bottom: 1px solid #333;
+        }
+        
+        .filter-controls input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #0f0f1a;
+            color: #fff;
+            font-size: 0.9em;
+        }
+        
+        .filter-controls input::placeholder {
+            color: #555;
+        }
+        
+        .zoo-list {
+            padding: 10px 0;
+        }
+        
+        .zoo-card {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .zoo-card:hover {
+            background: rgba(255, 215, 0, 0.05);
+            border-left-color: #ffd700;
+        }
+        
+        .zoo-card.active {
+            background: rgba(255, 215, 0, 0.1);
+            border-left-color: #ffd700;
+        }
+        
+        .zoo-name {
+            font-size: 0.95em;
+            color: #fff;
+            margin-bottom: 3px;
+            font-weight: 400;
+        }
+        
+        .zoo-location {
+            color: #666;
+            font-size: 0.8em;
+        }
+        
+        .leaflet-popup-content-wrapper {
+            background: #1a1a2e;
+            color: #fff;
+            border-radius: 8px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .leaflet-popup-tip {
+            background: #1a1a2e;
+        }
+        
+        .popup-content h3 {
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+        
+        .popup-content p {
+            color: #888;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+        }
+        
+        .popup-content .notes {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .popup-content a {
+            display: inline-block;
+            background: #ffd700;
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .popup-content a:hover {
+            background: #ffed4a;
+        }
+        
+        .hyrax-div-icon {
+            background: transparent !important;
+            border: none !important;
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5));
+        }
+        
+        .hyrax-div-icon svg {
+            transition: transform 0.2s;
+        }
+        
+        .hyrax-div-icon:hover svg {
+            transform: scale(1.15);
+        }
+        
+        .hyrax-img-marker {
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4));
+            transition: transform 0.2s;
+        }
+        
+        .hyrax-img-marker:hover {
+            transform: scale(1.1);
+        }
+        
+        .hyrax-marker {
+            width: 40px;
+            height: 50px;
+            position: relative;
+        }
+        
+        .hyrax-marker-icon {
+            width: 40px;
+            height: 40px;
+            background: #8B4513;
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            border: 2px solid #654321;
+        }
+        
+        .hyrax-marker-icon::before {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 10px;
+            background: #8B4513;
+            border-radius: 50%;
+            top: -6px;
+            left: 5px;
+            border: 2px solid #654321;
+        }
+        
+        .hyrax-marker-icon::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 10px;
+            background: #8B4513;
+            border-radius: 50%;
+            top: -6px;
+            right: 5px;
+            border: 2px solid #654321;
+        }
+        
+        .hyrax-marker-body {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 24px;
+            height: 20px;
+        }
+        
+        .hyrax-eye {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #000;
+            border-radius: 50%;
+            top: 4px;
+        }
+        
+        .hyrax-eye.left {
+            left: 4px;
+        }
+        
+        .hyrax-eye.right {
+            right: 4px;
+        }
+        
+        .hyrax-eye::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #fff;
+            border-radius: 50%;
+            top: 1px;
+            left: 1px;
+        }
+        
+        .hyrax-nose {
+            position: absolute;
+            width: 8px;
+            height: 5px;
+            background: #333;
+            border-radius: 50%;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .hyrax-marker-shadow {
+            width: 30px;
+            height: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            left: 5px;
+        }
+        
+        .hyrax-marker-pulse {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: rgba(139, 69, 19, 0.3);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            top: 0;
+            left: 0;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 300px;
+            }
+            
+            #map {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🦫 North American Hyrax Zoo Map</h1>
+        <p class="subtitle"><span id="totalZoos">0</span> zoos with rock hyraxes (Procavia capensis)</p>
+    </header>
+    
+    <div class="main-container">
+        <div id="map"></div>
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Zoos</h2>
+            </div>
+            <div class="filter-controls">
+                <input type="text" id="searchInput" placeholder="Search...">
+            </div>
+            <div class="zoo-list" id="zooList"></div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Zoo data
+        const zooData = {
+            "title": "North American Zoos with Hyraxes",
+            "zoos": [
+                {
+                    "id": 1,
+                    "name": "Brevard Zoo",
+                    "city": "Melbourne",
+                    "state": "FL",
+                    "country": "USA",
+                    "lat": 28.2329,
+                    "lng": -80.6801,
+                    "website": "https://brevardzoo.org/news/rock-hyrax-pups-are-here",
+                    "notes": "Rock hyrax sisters Radish and Turnip; recent pups born"
+                },
+                {
+                    "id": 2,
+                    "name": "Bronx Zoo",
+                    "city": "Bronx",
+                    "state": "NY",
+                    "country": "USA",
+                    "lat": 40.8503,
+                    "lng": -73.8772,
+                    "website": "https://bronxzoo.com/things-to-do/exhibits/gelada-reserve",
+                    "notes": "Featured in Gelada Reserve exhibit with geladas and ibex"
+                },
+                {
+                    "id": 3,
+                    "name": "Brookfield Zoo",
+                    "city": "Brookfield",
+                    "state": "IL",
+                    "country": "USA",
+                    "lat": 41.8314,
+                    "lng": -87.8367,
+                    "website": "https://www.brookfieldzoo.org/animals",
+                    "notes": "Status uncertain - may no longer have hyraxes as of 2019"
+                },
+                {
+                    "id": 4,
+                    "name": "Buffalo Zoo",
+                    "city": "Buffalo",
+                    "state": "NY",
+                    "country": "USA",
+                    "lat": 42.9345,
+                    "lng": -78.8747,
+                    "website": "https://buffalozoo.org/exhibits/giraffe-house",
+                    "notes": "Located in the Giraffe House exhibit"
+                },
+                {
+                    "id": 5,
+                    "name": "Chattanooga Zoo",
+                    "city": "Chattanooga",
+                    "state": "TN",
+                    "country": "USA",
+                    "lat": 35.0432,
+                    "lng": -85.3097,
+                    "website": "https://www.chattzoo.org/explore/rock-hyrax",
+                    "notes": "In Deserts Building; stable population"
+                },
+                {
+                    "id": 6,
+                    "name": "Dallas Zoo",
+                    "city": "Dallas",
+                    "state": "TX",
+                    "country": "USA",
+                    "lat": 32.7483,
+                    "lng": -96.8169,
+                    "website": "https://www.dallaszoo.com/explore-the-zoo",
+                    "notes": "In Gorilla Trail exhibit"
+                },
+                {
+                    "id": 7,
+                    "name": "Henry Vilas Zoo",
+                    "city": "Madison",
+                    "state": "WI",
+                    "country": "USA",
+                    "lat": 43.0584,
+                    "lng": -89.4198,
+                    "website": "https://www.henryvilaszoo.gov/animals",
+                    "notes": "Frenchie and Rizzo in Primate Building"
+                },
+                {
+                    "id": 8,
+                    "name": "Indianapolis Zoo",
+                    "city": "Indianapolis",
+                    "state": "IN",
+                    "country": "USA",
+                    "lat": 39.7696,
+                    "lng": -86.1802,
+                    "website": "https://www.indianapoliszoo.com/exhibits",
+                    "notes": "In Flights of Fancy African Aviary"
+                },
+                {
+                    "id": 9,
+                    "name": "Jacksonville Zoo",
+                    "city": "Jacksonville",
+                    "state": "FL",
+                    "country": "USA",
+                    "lat": 30.3692,
+                    "lng": -81.6109,
+                    "website": "https://www.jacksonvillezoo.org/mammals",
+                    "notes": "Listed among mammals"
+                },
+                {
+                    "id": 10,
+                    "name": "Kansas City Zoo",
+                    "city": "Kansas City",
+                    "state": "MO",
+                    "country": "USA",
+                    "lat": 39.0075,
+                    "lng": -94.5286,
+                    "website": "https://kansascityzoo.org/animals/wild-beginnings",
+                    "notes": "In African Kopje; recent births"
+                },
+                {
+                    "id": 11,
+                    "name": "Niabi Zoo",
+                    "city": "Coal Valley",
+                    "state": "IL",
+                    "country": "USA",
+                    "lat": 41.4250,
+                    "lng": -90.4244,
+                    "website": "https://www.niabizoo.com/animals-habitats",
+                    "notes": "Pair in rocky habitat"
+                },
+                {
+                    "id": 12,
+                    "name": "Oakland Zoo",
+                    "city": "Oakland",
+                    "state": "CA",
+                    "country": "USA",
+                    "lat": 37.8174,
+                    "lng": -122.1786,
+                    "website": "https://www.oaklandzoo.org/animals/rock-hyrax",
+                    "notes": "In African Savanna"
+                },
+                {
+                    "id": 13,
+                    "name": "San Antonio Zoo",
+                    "city": "San Antonio",
+                    "state": "TX",
+                    "country": "USA",
+                    "lat": 29.4644,
+                    "lng": -98.4670,
+                    "website": "https://sazoo.org/animals",
+                    "notes": "In Africa Rocks Kopje"
+                },
+                {
+                    "id": 14,
+                    "name": "San Diego Zoo",
+                    "city": "San Diego",
+                    "state": "CA",
+                    "country": "USA",
+                    "lat": 32.7353,
+                    "lng": -117.1490,
+                    "website": "https://animals.sandiegozoo.org/animals/rock-hyrax",
+                    "notes": "In kopje habitat"
+                },
+                {
+                    "id": 15,
+                    "name": "Smithsonian's National Zoo",
+                    "city": "Washington",
+                    "state": "DC",
+                    "country": "USA",
+                    "lat": 38.9296,
+                    "lng": -77.0494,
+                    "website": "https://nationalzoo.si.edu/animals/rock-hyrax",
+                    "notes": "In Small Mammal House"
+                },
+                {
+                    "id": 16,
+                    "name": "Stone Zoo",
+                    "city": "Stoneham",
+                    "state": "MA",
+                    "country": "USA",
+                    "lat": 42.4745,
+                    "lng": -71.0987,
+                    "website": "https://www.zoonewengland.org/stone-zoo/our-animals/mammals/rock-hyrax",
+                    "notes": "In Windows to the Wild"
+                },
+                {
+                    "id": 17,
+                    "name": "Virginia Zoo",
+                    "city": "Norfolk",
+                    "state": "VA",
+                    "country": "USA",
+                    "lat": 36.8543,
+                    "lng": -76.2875,
+                    "website": "https://virginiazoo.org/animal/rock-hyrax",
+                    "notes": "Boulder and Solei in African Safari Trail"
+                },
+                {
+                    "id": 18,
+                    "name": "Calgary Zoo",
+                    "city": "Calgary",
+                    "state": "AB",
+                    "country": "Canada",
+                    "lat": 51.0447,
+                    "lng": -114.0696,
+                    "website": "https://www.calgaryzoo.com/plan-your-visit/animal-zones/destination-africa/rock-hyraxes",
+                    "notes": "In Destination Africa"
+                },
+                {
+                    "id": 19,
+                    "name": "Granby Zoo",
+                    "city": "Granby",
+                    "state": "QC",
+                    "country": "Canada",
+                    "lat": 45.4044,
+                    "lng": -72.7250,
+                    "website": "https://www.zoodegranby.com/en/animals/rock-hyrax",
+                    "notes": "In Africa section (daman des rochers)"
+                },
+                {
+                    "id": 20,
+                    "name": "Edmonton Valley Zoo",
+                    "city": "Edmonton",
+                    "state": "AB",
+                    "country": "Canada",
+                    "lat": 53.4947,
+                    "lng": -113.5522,
+                    "website": "https://www.edmonton.ca/attractions_events/edmonton_valley_zoo/animals-at-the-zoo",
+                    "notes": "Bush hyrax residents"
+                }
+            ]
+        };
+        
+        // Initialize map
+        const map = L.map('map').setView([39.8283, -98.5795], 4);
+        
+        // Add tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+        
+        // Custom hyrax icon using image
+        const hyraxIcon = L.icon({
+            iconUrl: 'hyrax-icon.png',
+            iconSize: [50, 38],
+            iconAnchor: [25, 38],
+            popupAnchor: [0, -38]
+        });
+        
+        // Store markers for filtering
+        const markers = [];
+        
+        // Add markers for each zoo
+        zooData.zoos.forEach(zoo => {
+            const marker = L.marker([zoo.lat, zoo.lng], { icon: hyraxIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div class="popup-content">
+                        <h3>${zoo.name}</h3>
+                        <p>${zoo.city}, ${zoo.state}</p>
+                        <p class="notes">${zoo.notes}</p>
+                        <a href="${zoo.website}" target="_blank">View on Zoo Website →</a>
+                    </div>
+                `);
+            
+            marker.zooData = zoo;
+            markers.push(marker);
+        });
+        
+        // Update total count
+        document.getElementById('totalZoos').textContent = zooData.zoos.length;
+        
+        // Popup timeout for hover behavior
+        let popupTimeout;
+        
+        // Populate zoo list
+        function renderZooList(zoos) {
+            const zooList = document.getElementById('zooList');
+            zooList.innerHTML = '';
+            
+            zoos.forEach(zoo => {
+                const card = document.createElement('div');
+                card.className = 'zoo-card';
+                card.innerHTML = `
+                    <div class="zoo-name">${zoo.name}</div>
+                    <div class="zoo-location">${zoo.city}, ${zoo.state}</div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    map.setView([zoo.lat, zoo.lng], 12);
+                    markers.find(m => m.zooData.id === zoo.id).openPopup();
+                    
+                    document.querySelectorAll('.zoo-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                });
+                
+                card.addEventListener('mouseenter', () => {
+                    clearTimeout(popupTimeout);
+                    const marker = markers.find(m => m.zooData.id === zoo.id);
+                    marker.openPopup();
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    popupTimeout = setTimeout(() => {
+                        markers.forEach(m => {
+                            const popup = m.getPopup();
+                            if (!popup._container || !popup._container.matches(':hover')) {
+                                m.closePopup();
+                            }
+                        });
+                    }, 100);
+                });
+                
+                zooList.appendChild(card);
+            });
+        }
+        
+        renderZooList(zooData.zoos);
+        
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = zooData.zoos.filter(zoo => 
+                zoo.name.toLowerCase().includes(query) ||
+                zoo.city.toLowerCase().includes(query) ||
+                zoo.state.toLowerCase().includes(query)
+            );
+            renderZooList(filtered);
+        });
+        
+        // Marker hover shows popup with delay for popup interaction
+        markers.forEach(marker => {
+            marker.on('mouseover', function() {
+                clearTimeout(popupTimeout);
+                this.openPopup();
+            });
+            
+            marker.on('mouseout', function() {
+                const popup = this.getPopup();
+                popupTimeout = setTimeout(() => {
+                    if (!popup._container || !popup._container.matches(':hover')) {
+                        this.closePopup();
+                    }
+                }, 100);
+            });
+            
+            marker.on('click', () => {
+                document.querySelectorAll('.zoo-card').forEach(card => {
+                    card.classList.remove('active');
+                    if (card.querySelector('.zoo-name').textContent === marker.zooData.name) {
+                        card.classList.add('active');
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            });
+        });
+        
+        // Keep popup open when hovering over it
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.leaflet-popup')) {
+                clearTimeout(popupTimeout);
+            }
+        });
+        
+        // Close popup when mouse leaves the popup
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.closest('.leaflet-popup') && !e.relatedTarget?.closest('.leaflet-popup')) {
+                markers.forEach(m => m.closePopup());
+            }
+        });
+    </script>
+</body>
+</html>
